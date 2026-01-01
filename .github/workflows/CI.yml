@@ -1,0 +1,43 @@
+name: CI
+on:
+  workflow_dispatch:
+  schedule: [{cron: '00 16 * * *'}]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.10'}
+      - run: |
+          pip install -r requirements.txt -q
+          
+          echo "PROFILES<<EOF" >> $GITHUB_ENV
+          echo "${{ secrets.PROFILES }}" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          
+          echo "PUSH_CONFIG<<EOF" >> $GITHUB_ENV
+          echo "${{ secrets.PUSH_CONFIG }}" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          
+          echo "TG_BOT_TOKEN<<EOF" >> $GITHUB_ENV
+          echo "${{ secrets.TG_BOT_TOKEN }}" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          
+          echo "TG_USER_ID<<EOF" >> $GITHUB_ENV
+          echo "${{ secrets.TG_USER_ID }}" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+      - run: |
+          python utils.py > log.txt 2>&1 || true
+          python cleanup.py || true
+          rm -f log.txt
+      - uses: Mattraks/delete-workflow-runs@v2
+        if: always()
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          retain_days: 0
+          keep_minimum_runs: 0
