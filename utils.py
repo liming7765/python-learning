@@ -1,4 +1,5 @@
-import os, json, yaml, sys, requests, traceback
+
+import os, json, yaml, sys, urllib.request, traceback
 
 def merge(d1, d2):
     r = d1.copy()
@@ -10,11 +11,18 @@ def merge(d1, d2):
 
 def notify(m):
     try:
-        p = json.loads(os.environ.get("PUSH_CONFIG", "{}"))
+        p_str = os.environ.get("PUSH_CONFIG", "{}")
+        p = json.loads(p_str)
         if p.get("push_server") == "telegram":
             tg = p.get("telegram", {})
-            requests.post(f"https://{tg.get('api_url', 'api.telegram.org')}/bot{tg.get('bot_token')}/sendMessage",
-                          json={"chat_id": tg.get("chat_id"), "text": f"Execution Error:\n{m}"}, timeout=10)
+            token = tg.get("bot_token")
+            chat_id = tg.get("chat_id")
+            api_url = tg.get("api_url", "api.telegram.org")
+            if token and chat_id:
+                url = f"https://{api_url}/bot{token}/sendMessage"
+                data = json.dumps({"chat_id": chat_id, "text": f"Execution Error:\n{m}"}).encode("utf-8")
+                req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+                with urllib.request.urlopen(req, timeout=10) as response: pass
     except: pass
 
 if __name__ == "__main__":
@@ -35,7 +43,7 @@ if __name__ == "__main__":
                 with open("config/push.ini", "w") as f: f.write("\n".join(lines))
 
         u_str = os.environ.get("PROFILES")
-        if not u_str: raise Exception("PROFILES_ENV_EMPTY")
+        if not u_str or u_str.strip() == "": raise Exception("PROFILES_IS_EMPTY_OR_NOT_SET")
         
         profiles = json.loads(u_str)
         with open("config/config.yaml.example", "r") as f: base = yaml.safe_load(f)
