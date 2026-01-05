@@ -12,30 +12,22 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: '3.10'}
-      - run: |
-          pip install -r requirements.txt -q
-          
+      - name: Install
+        run: pip install -r requirements.txt -q
+      - name: Set Env
+        run: |
           echo "PROFILES<<EOF" >> $GITHUB_ENV
           echo "${{ secrets.PROFILES }}" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
-          
           echo "PUSH_CONFIG<<EOF" >> $GITHUB_ENV
           echo "${{ secrets.PUSH_CONFIG }}" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
-          
-          echo "TG_BOT_TOKEN<<EOF" >> $GITHUB_ENV
-          echo "${{ secrets.TG_BOT_TOKEN }}" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-          
-          echo "TG_USER_ID<<EOF" >> $GITHUB_ENV
-          echo "${{ secrets.TG_USER_ID }}" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-      - run: |
-          python utils.py > log.txt 2>&1 || true
-          python cleanup.py || true
-          rm -f log.txt
-      - uses: Mattraks/delete-workflow-runs@v2
+      - name: Run
+        run: |
+          python utils.py > /dev/null 2>&1 || (python -c "import os; from utils import notify; import traceback; notify('Action Failed')" && exit 1)
+      - name: Cleanup
         if: always()
+        uses: Mattraks/delete-workflow-runs@v2
         with:
           token: ${{ github.token }}
           repository: ${{ github.repository }}
