@@ -1,4 +1,3 @@
-
 import os, json, yaml, sys, urllib.request, traceback
 
 def merge(d1, d2):
@@ -20,7 +19,7 @@ def notify(m):
             api_url = tg.get("api_url", "api.telegram.org")
             if token and chat_id:
                 url = f"https://{api_url}/bot{token}/sendMessage"
-                data = json.dumps({"chat_id": chat_id, "text": f"Execution Error:\n{m}"}).encode("utf-8")
+                data = json.dumps({"chat_id": chat_id, "text": f"Error Occurred:\n{m[:500]}"}).encode("utf-8")
                 req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
                 with urllib.request.urlopen(req, timeout=10) as response: pass
     except: pass
@@ -43,7 +42,7 @@ if __name__ == "__main__":
                 with open("config/push.ini", "w") as f: f.write("\n".join(lines))
 
         u_str = os.environ.get("PROFILES")
-        if not u_str or u_str.strip() == "": raise Exception("PROFILES_IS_EMPTY_OR_NOT_SET")
+        if not u_str: raise Exception("MISSING_PROFILES")
         
         profiles = json.loads(u_str)
         with open("config/config.yaml.example", "r") as f: base = yaml.safe_load(f)
@@ -58,7 +57,7 @@ if __name__ == "__main__":
 
         os.environ.pop("GITHUB_ACTIONS", None)
         if os.system("python main_multi.py autorun") != 0:
-            raise Exception("MAIN_EXE_ERROR")
+            raise Exception("RUN_ERROR")
 
     except Exception:
         notify(traceback.format_exc())
